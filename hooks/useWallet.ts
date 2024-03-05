@@ -22,7 +22,7 @@ export const useWallet = (): ReturnUseWallet => {
       });
       if (!Array.isArray(accounts)) return;
       console.log("Connected: ", accounts[0]);
-      setCurrentAccount(accounts[0]); // 簡易実装のため、配列の初めのアドレスを使用します。
+      setCurrentAccount(accounts[0]);
     } catch (error) {
       console.log(error);
     }

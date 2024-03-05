@@ -1,6 +1,4 @@
 import type { NextPage } from "next";
-import Image from "next/image";
-
 import Container from "../components/Container/Container";
 import { useWallet } from "../hooks/useWallet";
 import styles from "../styles/Home.module.css";
