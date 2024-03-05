@@ -1,17 +1,16 @@
-.tabBody {
-  margin: 0px auto;
-  width: 460px;
-  padding-top: 5px;
+.authBody {
+  margin: 10px auto;
+  width: 400px;
   justify-content: center;
   align-items: center;
   background-color: #0e0e10;
-  border-radius: 0px 0px 19px 19px;
+  border-radius: 19px;
   border-top: 0px;
 }
 
 .bottomDiv {
   margin: 10px auto;
-  width: 30%;
+  width: 50%;
   padding: 5px;
   justify-content: center;
   align-items: center;
@@ -19,21 +18,17 @@
 }
 
 .btn {
-  background-color: #356c93;
-  margin: 10px 30px;
+  background-color: #e31c1c;
+  margin: 20px 0px;
   color: white;
   display: flex;
   justify-content: center;
   align-items: center;
   font-size: 18px;
-  width: 100px;
-  height: 40px;
-  border-radius: 9px;
+  width: 200px;
+  height: 50px;
+  border-radius: 15px;
   cursor: pointer;
-}
-
-.btn:hover {
-  background: #57adea;
 }
 
 .estimate {

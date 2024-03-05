@@ -14,19 +14,19 @@ const Home: NextPage = () => {
         <div className={styles.rightHeader}>
           <div className={styles.appName}> CubeSigner Demo </div>
         </div>
-        {currentAccount === undefined ? (
-          <div className={styles.connectBtn} onClick={connectWallet}>
-            {" "}
-            Connect to wallet{" "}
-          </div>
-        ) : (
+        {currentAccount !== undefined ? (
           <div className={styles.connected}>
             {" "}
             {"Connected to " + currentAccount}{" "}
           </div>
+        ) : (
+          ""
         )}
       </div>
-      <Container currentAccount={currentAccount} />
+      <Container
+        currentAccount={currentAccount}
+        connectWallet={connectWallet}
+      />
     </div>
   );
 };
