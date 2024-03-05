@@ -16,8 +16,7 @@ const Home: NextPage = () => {
         </div>
         {currentAccount !== undefined ? (
           <div className={styles.connected}>
-            {" "}
-            {"Connected to " + currentAccount}{" "}
+            {"Connected to " + currentAccount}
           </div>
         ) : (
           ""

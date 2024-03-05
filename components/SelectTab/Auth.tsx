@@ -8,12 +8,20 @@ type Props = {
 export default function Auth({ currentAccount, connectWallet }: Props) {
   return (
     <div className={styles.authBody}>
-      <div className={styles.bottomDiv}>
-        <div className={styles.btn} onClick={() => ""}>
-          Google
+      {currentAccount === undefined ? (
+        <div className={styles.bottomDiv}>
+          <div className={styles.btn} onClick={() => ""}>
+            Google
+          </div>
         </div>
-      </div>
-      <div style={{ color: "white", textAlign: "center" }}>or</div>
+      ) : (
+        ""
+      )}
+      {currentAccount === undefined ? (
+        <div style={{ color: "white", textAlign: "center" }}>or</div>
+      ) : (
+        ""
+      )}
       <div className={styles.bottomDiv}>
         {currentAccount === undefined ? (
           <div className={styles.btn} onClick={connectWallet}>
