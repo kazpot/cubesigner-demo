@@ -17,7 +17,7 @@ export default function Auth({ currentAccount, connectWallet }: Props) {
       client_id: clientId,
       redirect_uri: redirectUri,
       response_type: "id_token token",
-      scope: "https://mail.google.com/",
+      scope: "openid email",
       include_granted_scopes: "true",
       state: "pass-through value",
       nonce,

@@ -18,8 +18,10 @@ export default function LoginPage() {
         const jwtPayload: jwt.JwtPayload = decoded.payload as jwt.JwtPayload;
         console.log("iss:", jwtPayload.iss);
         console.log("sub:", jwtPayload.sub);
+        console.log("email:", jwtPayload.email);
         const iss = jwtPayload.iss;
         const sub = jwtPayload.sub;
+        const email = jwtPayload.email;
       }
       setIdToken(JSON.stringify(decoded?.payload));
     } else {
