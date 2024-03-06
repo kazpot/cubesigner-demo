@@ -4,7 +4,7 @@ import { useWallet } from "../hooks/useWallet";
 import styles from "../styles/Home.module.css";
 
 const Home: NextPage = () => {
-  const { currentAccount, connectWallet } = useWallet();
+  const { currentAccount, connectWallet, setCurrentAccount } = useWallet();
 
   return (
     <div className={styles.pageBody}>
@@ -23,6 +23,7 @@ const Home: NextPage = () => {
       <Container
         currentAccount={currentAccount}
         connectWallet={connectWallet}
+        setCurrentAccount={setCurrentAccount}
       />
     </div>
   );

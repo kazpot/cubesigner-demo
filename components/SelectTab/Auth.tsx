@@ -1,21 +1,27 @@
+import { Dispatch, SetStateAction } from "react";
 import styles from "./Auth.module.css";
 import { generators } from "openid-client";
 
 type Props = {
   currentAccount: string | undefined;
   connectWallet: any;
+  setCurrentAccount: Dispatch<SetStateAction<string | undefined>>;
 };
 
-export default function Auth({ currentAccount, connectWallet }: Props) {
+export default function Auth({
+  currentAccount,
+  connectWallet,
+  setCurrentAccount,
+}: Props) {
   const clientId = process.env.NEXT_PUBLIC_CLIENT_ID || "";
   const redirectUri = process.env.NEXT_PUBLIC_REDIRECT_URI || "";
   const oauth2Endpoint = process.env.NEXT_PUBLIC_OAUTH2_ENDPOINT || "";
-  //const cubeUser = localStorage.getItem("cubeuser");
 
   const handleSubmit = () => {
     const cubeUser = localStorage.getItem("cubeuser");
-    if (cubeUser !== undefined) {
-      console.log("oidc user!!!!");
+    if (cubeUser !== undefined && cubeUser !== null) {
+      const cubeArray = cubeUser?.split(":::");
+      setCurrentAccount(cubeArray[1]);
       return;
     }
 

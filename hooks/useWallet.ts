@@ -1,10 +1,17 @@
-import { useCallback, useEffect, useState } from "react";
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 
 import { getEthereum } from "../utils/ethereum";
 
 type ReturnUseWallet = {
   currentAccount: string | undefined;
   connectWallet: () => void;
+  setCurrentAccount: Dispatch<SetStateAction<string | undefined>>;
 };
 
 export const useWallet = (): ReturnUseWallet => {
@@ -57,5 +64,6 @@ export const useWallet = (): ReturnUseWallet => {
   return {
     currentAccount,
     connectWallet,
+    setCurrentAccount,
   };
 };
