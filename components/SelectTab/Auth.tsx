@@ -1,6 +1,4 @@
-import { useState } from "react";
 import styles from "./Auth.module.css";
-import axios from "axios";
 import { generators } from "openid-client";
 
 type Props = {
@@ -18,7 +16,7 @@ export default function Auth({ currentAccount, connectWallet }: Props) {
     const params = {
       client_id: clientId,
       redirect_uri: redirectUri,
-      response_type: "code id_token",
+      response_type: "id_token token",
       scope: "https://mail.google.com/",
       include_granted_scopes: "true",
       state: "pass-through value",
