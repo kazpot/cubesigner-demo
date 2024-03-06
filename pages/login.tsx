@@ -22,6 +22,8 @@ export default function LoginPage() {
         const iss = jwtPayload.iss;
         const sub = jwtPayload.sub;
         const email = jwtPayload.email;
+
+        // Validate JWT
       }
       setIdToken(JSON.stringify(decoded?.payload));
     } else {
@@ -29,9 +31,5 @@ export default function LoginPage() {
     }
   }, [params]);
 
-  return (
-    <main>
-      <p>idToken: {idToken}</p>
-    </main>
-  );
+  return <main>{idToken}</main>;
 }
