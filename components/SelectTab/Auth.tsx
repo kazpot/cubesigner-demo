@@ -10,8 +10,15 @@ export default function Auth({ currentAccount, connectWallet }: Props) {
   const clientId = process.env.NEXT_PUBLIC_CLIENT_ID || "";
   const redirectUri = process.env.NEXT_PUBLIC_REDIRECT_URI || "";
   const oauth2Endpoint = process.env.NEXT_PUBLIC_OAUTH2_ENDPOINT || "";
+  //const cubeUser = localStorage.getItem("cubeuser");
 
   const handleSubmit = () => {
+    const cubeUser = localStorage.getItem("cubeuser");
+    if (cubeUser !== undefined) {
+      console.log("oidc user!!!!");
+      return;
+    }
+
     const nonce = generators.nonce();
     const params = {
       client_id: clientId,

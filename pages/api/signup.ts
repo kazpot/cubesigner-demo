@@ -12,27 +12,31 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseData>
 ) {
-  const fileStorage = new JsonFileSessionStorage<cs.SignerSessionData>(
-    sessionFilePath
-  );
+  try {
+    const fileStorage = new JsonFileSessionStorage<cs.SignerSessionData>(
+      sessionFilePath
+    );
 
-  const sessionManger = await cs.SignerSessionManager.loadFromStorage(
-    fileStorage
-  );
+    const sessionManger = await cs.SignerSessionManager.loadFromStorage(
+      fileStorage
+    );
 
-  const client = new cs.CubeSignerClient(sessionManger);
-  const me = await client.aboutMe();
-  console.log(me);
+    const client = new cs.CubeSignerClient(sessionManger);
 
-  const org = await client.orgGet();
-  console.log(org);
+    // const { iss, sub, email } = req.body;
+    // const userId = await client.createOidcUser({ iss, sub }, email, {
+    //   memberRole: "Alien",
+    // });
 
-  const secpKey = await client.createKey(cs.Secp256k1.Evm);
-  console.log(secpKey.owner);
+    const userId = "User#71ee6a75-e0d8-4e2b-9253-b899372c9cd4";
 
-  // const userId = client.createOidcUser({ iss: "", sub: "" }, "email", {
-  //   memberRole: "Alien",
-  // });
+    console.log("userId: " + userId);
 
-  res.status(200).json({ message: "Hello from Next.js!" });
+    const key = await client.createKey(cs.Secp256k1.Evm, userId);
+    const evmAddress = key.materialId;
+
+    res.status(200).json({ message: evmAddress });
+  } catch (e: any) {
+    res.status(200).json({ message: "Failed to sign up: " + e.message });
+  }
 }
