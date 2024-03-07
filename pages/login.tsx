@@ -1,8 +1,11 @@
 import { useEffect } from "react";
 import jwt from "jsonwebtoken";
 import axios from "axios";
+import { useRouter } from "next/router";
 
 export default function LoginPage() {
+  const router = useRouter();
+
   useEffect(() => {
     async function signup() {
       const fragmentHash = window.location.hash;
@@ -52,5 +55,14 @@ export default function LoginPage() {
     signup();
   }, []);
 
-  return <main>success</main>;
+  const handleGoBack = () => {
+    router.push("/");
+  };
+
+  return (
+    <main>
+      <h1>Success!!!</h1>
+      <button onClick={handleGoBack}>Go Back</button>
+    </main>
+  );
 }
