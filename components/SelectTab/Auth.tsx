@@ -18,27 +18,31 @@ export default function Auth({
   const oauth2Endpoint = process.env.NEXT_PUBLIC_OAUTH2_ENDPOINT || "";
 
   const handleSubmit = () => {
-    const cubeUser = localStorage.getItem("cubeuser");
-    if (cubeUser !== undefined && cubeUser !== null) {
-      const cubeArray = cubeUser?.split(":::");
-      setCurrentAccount(cubeArray[1]);
+    const token = localStorage.getItem("token");
+    // token does not exist or expired
+    if (token === undefined || token === null) {
+      const nonce = generators.nonce();
+      const params = {
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        response_type: "id_token token",
+        scope: "openid email",
+        include_granted_scopes: "true",
+        state: "pass-through value",
+        nonce,
+      };
+
+      const url = new URL(oauth2Endpoint);
+      url.search = new URLSearchParams(params).toString();
+      window.open(url.toString(), "_self");
       return;
     }
 
-    const nonce = generators.nonce();
-    const params = {
-      client_id: clientId,
-      redirect_uri: redirectUri,
-      response_type: "id_token token",
-      scope: "openid email",
-      include_granted_scopes: "true",
-      state: "pass-through value",
-      nonce,
-    };
-
-    const url = new URL(oauth2Endpoint);
-    url.search = new URLSearchParams(params).toString();
-    window.open(url.toString(), "_self");
+    const address = localStorage.getItem("address");
+    if (address !== undefined && address !== null) {
+      setCurrentAccount(address);
+      return;
+    }
   };
 
   return (

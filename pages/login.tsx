@@ -11,26 +11,38 @@ export default function LoginPage() {
 
       if (match && match[1]) {
         const idToken = match[1];
+        localStorage.setItem("token", idToken);
+
         const decoded = jwt.decode(idToken, { complete: true });
         if (decoded != null) {
           const jwtPayload: jwt.JwtPayload = decoded.payload as jwt.JwtPayload;
-          console.log("iss:", jwtPayload.iss);
-          console.log("sub:", jwtPayload.sub);
-          console.log("email:", jwtPayload.email);
           const iss = jwtPayload.iss;
           const sub = jwtPayload.sub;
           const email = jwtPayload.email;
 
-          // Validate JWT
-          const res = await axios.post("/api/signup", {
+          // Need to validate JWT properly here
+
+          let res = await axios.post("/api/signup", {
             iss,
             sub,
             email,
           });
 
           if (res.status === 200) {
+            const userId = res.data.userId;
             console.log(res.data.message);
-            localStorage.setItem("cubeuser", `${idToken}:::${res.data.message}`);
+            localStorage.setItem("userId", userId);
+
+            res = await axios.post("/api/getaddress", {
+              userId,
+            });
+
+            if (res.status === 200) {
+              const keyId = res.data.keyId;
+              const address = res.data.address;
+              localStorage.setItem("keyId", keyId);
+              localStorage.setItem("address", address);
+            }
           }
         }
       } else {
