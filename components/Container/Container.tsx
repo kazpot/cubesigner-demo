@@ -1,5 +1,5 @@
 import styles from "./Container.module.css";
-import Auth from "../SelectTab/Auth";
+import Auth from "../Auth/Auth";
 import { Dispatch, SetStateAction } from "react";
 
 type Props = {

@@ -3,7 +3,7 @@ import * as cs from "@cubist-labs/cubesigner-sdk";
 import { JsonFileSessionStorage } from "@cubist-labs/cubesigner-sdk-fs-storage";
 
 type ResponseData = {
-  userId: string | null;
+  status: string | null;
   error: string;
 };
 
@@ -24,15 +24,33 @@ export default async function handler(
 
     const client = new cs.CubeSignerClient(sessionManger);
 
-    const { iss, sub, email } = req.body;
-    const userId = await client.createOidcUser({ iss, sub }, email, {
-      memberRole: "Alien",
-    });
+    const proof = req.body.proof;
+    const org = new cs.Org(client);
 
-    res.status(200).json({ userId, error: "" });
+    try {
+      await org.verifyIdentity(proof);
+      console.log("verified");
+    } catch (e: any) {
+      res.status(403).json({
+        status: null,
+        error: "Failed to verify identity: " + e.message,
+      });
+    }
+
+    if (proof.user_info?.user_id) {
+      const result = await client.deleteOidcUser({
+        iss: proof.identity.iss,
+        sub: proof.identity.sub,
+      });
+
+      console.log("delete user: " + result.status);
+
+      res.status(200).json({ status: result.status, error: "" });
+    }
   } catch (e: any) {
-    res
-      .status(500)
-      .json({ userId: null, error: "Failed to sign up: " + e.message });
+    res.status(500).json({
+      status: null,
+      error: "Failed to sign up: " + e.message,
+    });
   }
 }

@@ -1,85 +1,92 @@
 import { useEffect } from "react";
-import jwt from "jsonwebtoken";
 import axios from "axios";
 import { useRouter } from "next/router";
-
-const styles = {
-  container: {
-    backgroundColor: "black",
-    color: "white",
-    textAlign: "center" as const,
-    padding: "50px",
-  },
-  heading: {
-    fontSize: "24px",
-    marginBottom: "20px",
-  },
-  button: {
-    padding: "10px 20px",
-    fontSize: "16px",
-    backgroundColor: "white",
-    color: "black",
-    border: "none",
-    cursor: "pointer",
-    borderRadius: "5px",
-    transition: "background-color 0.3s ease",
-  },
-};
+import * as cs from "@cubist-labs/cubesigner-sdk";
 
 export default function OidcCallbackPage() {
   const router = useRouter();
 
   useEffect(() => {
-    async function signup() {
+    async function createUser() {
       const fragmentHash = window.location.hash;
       const regex = /id_token=([^&]+)/;
       const match = fragmentHash.match(regex);
+      const orgId = process.env.NEXT_PUBLIC_CUBE_ORG_ID || "";
 
       if (match && match[1]) {
-        const idToken = match[1];
-        localStorage.setItem("token", idToken);
+        const oidcToken = match[1];
+        localStorage.setItem("token", oidcToken);
 
-        const decoded = jwt.decode(idToken, { complete: true });
-        if (decoded != null) {
-          const jwtPayload: jwt.JwtPayload = decoded.payload as jwt.JwtPayload;
-          const iss = jwtPayload.iss;
-          const sub = jwtPayload.sub;
-          const email = jwtPayload.email;
+        const oidcClient = new cs.OidcClient(cs.envs.gamma, orgId, oidcToken);
+        const proof = await oidcClient.identityProve();
+        console.log("proof: " + JSON.stringify(proof));
 
-          // Need to validate JWT properly here
-
-          let res = await axios.post("/api/signup", {
-            iss,
-            sub,
-            email,
+        if (!proof.user_info) {
+          let res = await axios.post("/api/create-user", {
+            proof,
           });
 
           if (res.status === 200) {
-            const userId = res.data.userId;
-            console.log(res.data.message);
-            localStorage.setItem("userId", userId);
-
-            res = await axios.post("/api/getaddress", {
-              userId,
-            });
-
-            if (res.status === 200) {
-              const keyId = res.data.keyId;
-              const address = res.data.address;
-              localStorage.setItem("keyId", keyId);
-              localStorage.setItem("address", address);
-            }
+            localStorage.setItem("userId", res.data.userId);
+            localStorage.setItem("keyId", res.data.keyId);
+            localStorage.setItem("address", res.data.address);
           }
         }
+
+        if ((proof.user_info?.configured_mfa ?? []).length == 0) {
+          const loginResp = await oidcClient.sessionCreate(["manage:mfa"]);
+          const mfaSessionInfo = loginResp.requiresMfa()
+            ? loginResp.mfaSessionInfo()
+            : loginResp.data();
+          const sessionManager =
+            await cs.SignerSessionManager.createFromSessionInfo(
+              cs.envs.gamma,
+              orgId,
+              mfaSessionInfo!
+            );
+          const cubesigner = new cs.CubeSignerClient(sessionManager);
+          const addFidoResp = await cubesigner.addFidoStart("My Fido Key");
+          const challenge = addFidoResp.data();
+
+          // === only needed when testing locally ===
+          delete challenge.options.rp.id;
+          // ========================================
+          await challenge.createCredentialAndAnswer();
+          console.log("FIDO added!");
+        }
       } else {
-        console.log("id_token not found");
+        console.log("oidc token not found");
       }
     }
-    signup();
+    createUser();
   }, []);
 
   const handleGoBack = () => {
     router.push("/");
+  };
+
+  const deleteUser = async () => {
+    const orgId = process.env.NEXT_PUBLIC_CUBE_ORG_ID || "";
+    const oidcToken = localStorage.getItem("token") || "";
+
+    const oidcClient = new cs.OidcClient(cs.envs.gamma, orgId, oidcToken);
+    const proof = await oidcClient.identityProve();
+    console.log("proof: " + JSON.stringify(proof));
+
+    if (proof.user_info) {
+      let res = await axios.post("/api/delete-user", {
+        proof,
+      });
+
+      if (res.status === 200) {
+        localStorage.setItem("userId", "");
+        localStorage.setItem("keyId", "");
+        localStorage.setItem("address", "");
+      }
+      alert(res.data.status);
+    } else {
+      alert("oidc user doex not exit");
+    }
   };
 
   return (
@@ -106,6 +113,23 @@ export default function OidcCallbackPage() {
         onClick={handleGoBack}
       >
         Go Back
+      </button>
+      <br />
+      <button
+        style={{
+          padding: "10px 20px",
+          fontSize: "16px",
+          backgroundColor: "white",
+          color: "black",
+          border: "none",
+          cursor: "pointer",
+          borderRadius: "5px",
+          transition: "background-color 0.3s ease",
+          marginTop: "50px",
+        }}
+        onClick={deleteUser}
+      >
+        Delete User
       </button>
     </main>
   );
