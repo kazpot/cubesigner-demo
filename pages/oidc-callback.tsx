@@ -3,7 +3,30 @@ import jwt from "jsonwebtoken";
 import axios from "axios";
 import { useRouter } from "next/router";
 
-export default function LoginPage() {
+const styles = {
+  container: {
+    backgroundColor: "black",
+    color: "white",
+    textAlign: "center" as const,
+    padding: "50px",
+  },
+  heading: {
+    fontSize: "24px",
+    marginBottom: "20px",
+  },
+  button: {
+    padding: "10px 20px",
+    fontSize: "16px",
+    backgroundColor: "white",
+    color: "black",
+    border: "none",
+    cursor: "pointer",
+    borderRadius: "5px",
+    transition: "background-color 0.3s ease",
+  },
+};
+
+export default function OidcCallbackPage() {
   const router = useRouter();
 
   useEffect(() => {
@@ -60,9 +83,30 @@ export default function LoginPage() {
   };
 
   return (
-    <main>
-      <h1>Success!!!</h1>
-      <button onClick={handleGoBack}>Go Back</button>
+    <main
+      style={{
+        backgroundColor: "black",
+        color: "white",
+        textAlign: "center",
+        padding: "50px",
+      }}
+    >
+      <h1 style={{ fontSize: "24px", marginBottom: "20px" }}>Success!!!</h1>
+      <button
+        style={{
+          padding: "10px 20px",
+          fontSize: "16px",
+          backgroundColor: "white",
+          color: "black",
+          border: "none",
+          cursor: "pointer",
+          borderRadius: "5px",
+          transition: "background-color 0.3s ease",
+        }}
+        onClick={handleGoBack}
+      >
+        Go Back
+      </button>
     </main>
   );
 }

@@ -20,7 +20,7 @@ export default function Auth({
 
   const handleSubmit = () => {
     const token = localStorage.getItem("token");
-    // token does not exist or expired
+    // Need to check if token exists or expires
     if (token === undefined || token === null) {
       const nonce = generators.nonce();
       const params = {
