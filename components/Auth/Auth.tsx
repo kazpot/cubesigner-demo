@@ -1,7 +1,9 @@
 import { Dispatch, SetStateAction } from "react";
 import styles from "./Auth.module.css";
 import { generators } from "openid-client";
-import axios from "axios";
+import * as cs from "@cubist-labs/cubesigner-sdk";
+import { ethers } from "ethers";
+import jwt, { JwtPayload } from "jsonwebtoken";
 
 type Props = {
   currentAccount: string | undefined;
@@ -20,8 +22,19 @@ export default function Auth({
 
   const handleSubmit = () => {
     const token = localStorage.getItem("token");
+
     // Need to check if token exists or expires
-    if (token === undefined || token === null) {
+    let tokenExpired = false;
+    const decodedToken = jwt.decode(token!) as JwtPayload;
+    const expirationTime = decodedToken?.exp;
+    if (expirationTime) {
+      const currentTime = Math.floor(Date.now() / 1000);
+      if (expirationTime < currentTime) {
+        tokenExpired = true;
+      }
+    }
+
+    if (token === undefined || token === null || tokenExpired) {
       const nonce = generators.nonce();
       const params = {
         client_id: clientId,
@@ -46,25 +59,91 @@ export default function Auth({
     }
   };
 
+  const oidcLogin = async (oidcToken: string, scopes: string[]) => {
+    console.log("logging into with oidc");
+    const orgId = process.env.NEXT_PUBLIC_CUBE_ORG_ID || "";
+
+    const oidcClient = new cs.OidcClient(cs.envs.gamma, orgId, oidcToken);
+
+    console.log("session create");
+    let res = await oidcClient.sessionCreate(scopes);
+    console.log("session created");
+    if (res.requiresMfa()) {
+      const mfaSession = res.mfaSessionInfo();
+      const mfaSessionManager =
+        await cs.SignerSessionManager.createFromSessionInfo(
+          cs.envs.gamma,
+          orgId,
+          mfaSession!
+        );
+      const signerSession = new cs.SignerSession(mfaSessionManager);
+      const mfaId = res.mfaId();
+      const challenge = await signerSession.fidoApproveStart(mfaId);
+
+      // === only needed when testing locally ===
+      delete challenge.options.rpId;
+      // ========================================
+
+      const mfaInfo = await challenge.createCredentialAndAnswer();
+
+      if (!mfaInfo.receipt) {
+        throw new Error("MFA not approved yet");
+      }
+
+      res = await res.signWithMfaApproval({
+        mfaId,
+        mfaOrgId: orgId,
+        mfaConf: mfaInfo.receipt.confirmation,
+      });
+    }
+
+    if (res.requiresMfa()) {
+      throw new Error("MFA should not be required after approval");
+    }
+
+    const seesionInfo = res.data();
+    return await cs.SignerSessionManager.createFromSessionInfo(
+      cs.envs.gamma,
+      orgId,
+      seesionInfo
+    );
+  };
+
   const signTransaction = async () => {
     console.log("sign transaction");
-    const oidcToken = localStorage.getItem("token");
-    const from = localStorage.getItem("address");
+    const chainId = process.env.NEXT_PUBLIC_CHAIN_ID || "";
+    const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || "";
+
+    const oidcToken = localStorage.getItem("token")!;
+    const sessionManager = await oidcLogin(oidcToken, ["sign:*"]);
+    const oidcSession = new cs.SignerSession(sessionManager);
+    const key = (await oidcSession.keys())[0];
+
+    const from = key.material_id;
     const to = "0x6e84845fdd0C6F431543cA4Fdf0097d476775B9d";
     const gas = "0x61a80";
     const gasPrice = "0x77359400";
 
-    const res = await axios.post("/api/signtx", {
-      oidcToken,
-      from,
-      to,
-      gas,
-      gasPrice,
-    });
+    const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
+    const nonce = await provider.getTransactionCount(key.materialId);
+    const nonceHex = nonce.toString(16);
+    console.log("nonce: " + nonceHex);
 
-    if (res.status === 200) {
-      alert(res.data.signedTx);
-    }
+    const signReq = {
+      chain_id: parseInt(chainId), // Avalanche LT0 Subnet
+      tx: {
+        type: "0x00",
+        gas,
+        gasPrice,
+        nonce: nonceHex,
+        from,
+        to,
+        value: "0x1",
+      } as any,
+    };
+
+    const sig = await oidcSession.signEvm(key.material_id, signReq);
+    alert(`signed tx: ${sig.data().rlp_signed_tx}`);
   };
 
   return (
