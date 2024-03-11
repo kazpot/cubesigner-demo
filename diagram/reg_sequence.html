@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="mermaid.min.css">
+</head>
+<body>
+  <div class="mermaid">
+  sequenceDiagram
+    participant user as User
+    participant oidc as Google, Facebook, etc
+    participant back as Backend
+    participant cube as CubeSigner
+    back ->> back: login as owner and create session (long-lived)
+    user ->> oidc: generate OIDC token
+    oidc ->> user : callback with OIDC token
+    user ->> user: create proof from OIDC token
+    user ->> back : create user
+    back ->> back: verify identity proof
+    back ->> cube: create OIDC user
+    cube -->> back: ok
+    back ->> back: create key (evmAddress)
+    back -->> user: userId, keyId, evmAddress
+    user ->> user: add FIDO/TOTP (MFA)
+  </div>
+  <script src="../node_modules/mermaid/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true});</script>
+</body>
+</html>
