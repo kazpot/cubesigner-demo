@@ -23,9 +23,9 @@ export default function Auth({
   const handleSubmit = () => {
     const token = localStorage.getItem("token");
 
+    // check token expiration
     let tokenExpired = true;
     if (token !== undefined && token !== null) {
-      // Need to check if token exists or expires
       const decodedToken = jwt.decode(token!) as JwtPayload;
       const expirationTime = decodedToken?.exp;
       if (expirationTime) {
@@ -36,6 +36,7 @@ export default function Auth({
       }
     }
 
+    // check token existense
     if (token === undefined || token === null || tokenExpired) {
       const nonce = generators.nonce();
       const params = {
