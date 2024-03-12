@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch, SetStateAction, useState } from "react";
 import styles from "./Auth.module.css";
 import { generators } from "openid-client";
 import * as cs from "@cubist-labs/cubesigner-sdk";
@@ -20,7 +20,9 @@ export default function Auth({
   const redirectUri = process.env.NEXT_PUBLIC_REDIRECT_URI || "";
   const oauth2Endpoint = process.env.NEXT_PUBLIC_OAUTH2_ENDPOINT || "";
 
-  const handleSubmit = () => {
+  const [oidcSession, setOidcSession] = useState<cs.SignerSession>();
+
+  const handleSubmit = async () => {
     const token = localStorage.getItem("token");
 
     // check token expiration
@@ -55,11 +57,11 @@ export default function Auth({
       return;
     }
 
-    const address = localStorage.getItem("address");
-    if (address !== undefined && address !== null) {
-      setCurrentAccount(address);
-      return;
-    }
+    const sessionManager = await oidcLogin(token, ["sign:*"]);
+    const oidcSession = new cs.SignerSession(sessionManager);
+    const key = (await oidcSession.keys())[0];
+    setOidcSession(oidcSession);
+    setCurrentAccount(key.material_id);
   };
 
   const oidcLogin = async (oidcToken: string, scopes: string[]) => {
@@ -110,39 +112,40 @@ export default function Auth({
 
   const signTransaction = async () => {
     console.log("sign transaction");
-    const chainId = process.env.NEXT_PUBLIC_CHAIN_ID || "";
-    const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || "";
+    if (oidcSession != null) {
+      const chainId = process.env.NEXT_PUBLIC_CHAIN_ID || "";
+      const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || "";
 
-    const oidcToken = localStorage.getItem("token")!;
-    const sessionManager = await oidcLogin(oidcToken, ["sign:*"]);
-    const oidcSession = new cs.SignerSession(sessionManager);
-    const key = (await oidcSession.keys())[0];
+      const key = (await oidcSession.keys())[0];
 
-    const from = key.material_id;
-    const to = "0x6e84845fdd0C6F431543cA4Fdf0097d476775B9d";
-    const gas = "0x61a80";
-    const gasPrice = "0x77359400";
+      const from = key.material_id;
+      const to = "0x6e84845fdd0C6F431543cA4Fdf0097d476775B9d";
+      const gas = "0x61a80";
+      const gasPrice = "0x77359400";
 
-    const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
-    const nonce = await provider.getTransactionCount(key.materialId);
-    const nonceHex = nonce.toString(16);
-    console.log("nonce: " + nonceHex);
+      const provider = new ethers.providers.JsonRpcProvider(rpcUrl);
+      const nonce = await provider.getTransactionCount(key.materialId);
+      const nonceHex = nonce.toString(16);
+      console.log("nonce: " + nonceHex);
 
-    const signReq = {
-      chain_id: parseInt(chainId), // Avalanche LT0 Subnet
-      tx: {
-        type: "0x00",
-        gas,
-        gasPrice,
-        nonce: nonceHex,
-        from,
-        to,
-        value: "0x1",
-      } as any,
-    };
+      const signReq = {
+        chain_id: parseInt(chainId), // Avalanche LT0 Subnet
+        tx: {
+          type: "0x00",
+          gas,
+          gasPrice,
+          nonce: nonceHex,
+          from,
+          to,
+          value: "0x1",
+        } as any,
+      };
 
-    const sig = await oidcSession.signEvm(key.material_id, signReq);
-    alert(`signed tx: ${sig.data().rlp_signed_tx}`);
+      const sig = await oidcSession.signEvm(key.material_id, signReq);
+      alert(`signed tx: ${sig.data().rlp_signed_tx}`);
+    } else {
+      alert("no oidc session found!");
+    }
   };
 
   return (

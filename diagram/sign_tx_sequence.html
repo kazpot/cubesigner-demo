@@ -14,11 +14,11 @@
     user ->> user: check token existence and expiration
     user ->> oidc: if token is invalid, generate OIDC token again
     oidc ->> user : callback with a new OIDC token
+    user ->> user: FIDO/TOTP (MFA)
     user ->> cube: sessionCreate (Exchange OIDC token for signer session)
     cube -->> user : signer session
     user ->> blockchain: getTransactionCount
     blockchain --> user: nonce
-    user ->> user: FIDO/TOTP (MFA)
     user ->> cube: sign request
     cube -->> user: signed transaction
     user ->> blockchain: sendRawTransaction
