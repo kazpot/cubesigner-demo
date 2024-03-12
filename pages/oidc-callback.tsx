@@ -31,6 +31,8 @@ export default function OidcCallbackPage() {
             localStorage.setItem("keyId", res.data.keyId);
             localStorage.setItem("address", res.data.address);
           }
+        } else {
+          localStorage.setItem("userId", proof.user_info.user_id);
         }
 
         if ((proof.user_info?.configured_mfa ?? []).length == 0) {
@@ -52,7 +54,7 @@ export default function OidcCallbackPage() {
           delete challenge.options.rp.id;
           // ========================================
           await challenge.createCredentialAndAnswer();
-          console.log("FIDO added!");
+          alert("FIDO added!");
         }
       } else {
         console.log("oidc token not found");
@@ -79,11 +81,12 @@ export default function OidcCallbackPage() {
       });
 
       if (res.status === 200) {
-        localStorage.setItem("userId", "");
-        localStorage.setItem("keyId", "");
-        localStorage.setItem("address", "");
+        localStorage.removeItem("token");
+        localStorage.removeItem("userId");
+        localStorage.removeItem("keyId");
+        localStorage.removeItem("address");
       }
-      alert(res.data.status);
+      alert("user deleted!");
     } else {
       alert("oidc user doex not exit");
     }

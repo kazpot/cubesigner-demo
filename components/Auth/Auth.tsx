@@ -23,14 +23,16 @@ export default function Auth({
   const handleSubmit = () => {
     const token = localStorage.getItem("token");
 
-    // Need to check if token exists or expires
-    let tokenExpired = false;
-    const decodedToken = jwt.decode(token!) as JwtPayload;
-    const expirationTime = decodedToken?.exp;
-    if (expirationTime) {
-      const currentTime = Math.floor(Date.now() / 1000);
-      if (expirationTime < currentTime) {
-        tokenExpired = true;
+    let tokenExpired = true;
+    if (token !== undefined && token !== null) {
+      // Need to check if token exists or expires
+      const decodedToken = jwt.decode(token!) as JwtPayload;
+      const expirationTime = decodedToken?.exp;
+      if (expirationTime) {
+        const currentTime = Math.floor(Date.now() / 1000);
+        if (expirationTime > currentTime) {
+          tokenExpired = false;
+        }
       }
     }
 
@@ -62,12 +64,8 @@ export default function Auth({
   const oidcLogin = async (oidcToken: string, scopes: string[]) => {
     console.log("logging into with oidc");
     const orgId = process.env.NEXT_PUBLIC_CUBE_ORG_ID || "";
-
     const oidcClient = new cs.OidcClient(cs.envs.gamma, orgId, oidcToken);
-
-    console.log("session create");
     let res = await oidcClient.sessionCreate(scopes);
-    console.log("session created");
     if (res.requiresMfa()) {
       const mfaSession = res.mfaSessionInfo();
       const mfaSessionManager =
