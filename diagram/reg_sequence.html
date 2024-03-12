@@ -15,11 +15,11 @@
     user ->> oidc: generate OIDC token
     oidc ->> user : callback with OIDC token
     user ->> user: create proof from OIDC token
-    user ->> back : create user
+    user ->> back : create user with identity proof
     back ->> back: verify identity proof
-    back ->> cube: create OIDC user
-    cube -->> back: ok
-    back ->> back: create key (evmAddress)
+    back ->> cube: create OIDC user (iss, sub)
+    cube -->> back: userId
+    back ->> back: create key with userId (evmAddress)
     back -->> user: userId, keyId, evmAddress
     user ->> user: add FIDO/TOTP (MFA)
   </div>

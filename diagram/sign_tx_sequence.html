@@ -14,7 +14,7 @@
     user ->> user: check token existence and expiration
     user ->> oidc: if token is invalid, generate OIDC token again
     oidc ->> user : callback with a new OIDC token
-    user ->> cube: create signer session with OIDC token
+    user ->> cube: sessionCreate (Exchange OIDC token for signer session)
     cube -->> user : signer session
     user ->> blockchain: getTransactionCount
     blockchain --> user: nonce
