@@ -21,7 +21,7 @@
     cube -->> back: userId
     back ->> back: create key with userId (evmAddress)
     back -->> user: userId, keyId, evmAddress
-    user ->> user: add FIDO/TOTP (MFA)
+    user ->> user: add FIDO/TOTP as MFA (option)
   </div>
   <script src="../node_modules/mermaid/dist/mermaid.min.js"></script>
   <script>mermaid.initialize({startOnLoad:true});</script>
