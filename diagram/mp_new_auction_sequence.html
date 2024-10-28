@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+    <script src="../node_modules/mermaid/dist/mermaid.min.js"></script>
+    <script>
+      mermaid.initialize({ startOnLoad: true });
+    </script>
+</head>
+<body>
+  <div class="mermaid">
+    sequenceDiagram
+      participant seller as Seller
+      participant bidder as Bidder
+      participant oidc as Google
+      participant resella as Resella API
+      participant cube as CubeSigner
+      participant relayer as Gas Relayer
+      participant blockchain as Blockchain
+      participant mp as Marketplace Contract
+      participant webhook as Webhook Server
+      participant db as Resella DB
+      
+      seller ->> seller: 1. check token existence and expiration
+      seller ->> oidc: 2. if token is invalid, generate OIDC token again
+      oidc ->> seller: 3. callback with a new OIDC token
+      seller ->> seller: 4. FIDO/TOTP (if MFA was set during registration)
+      
+      seller ->> cube: 5. sessionCreate (Exchange OIDC token for signer session)
+      cube -->> seller: signer session
+      seller ->> resella: 6. 所持NFT一覧取得
+      resella -->> seller: 所持NFT一覧
+      seller ->> blockchain: 7. getTransactionCount
+      blockchain --> seller: nonce
+      seller ->> cube: 8. createListingメソッドに対してEIP712 sign request (Gas less transaction)
+      cube -->> seller: signed transaction
+      seller ->> relayer: 9. sendRawTransaction
+      relayer ->> blockchain: forward
+      blockchain ->> mp: createListingメソッド実行
+      mp ->> mp: NFTをtokenOwnerからマケプレコントラクトに転送
+      mp ->> webhook: ListingAddedイベント
+      webhook ->> db: Listレコード新規追加
+      mp -->> blockchain: ok
+      blockchain -->> relayer: ok
+      relayer -->> seller: ok
+      
+      bidder ->> bidder: 10. check token existence and expiration
+      bidder ->> oidc: 11. if token is invalid, generate OIDC token again
+      oidc ->> bidder: 12. callback with a new OIDC token
+      bidder ->> bidder: 13. FIDO/TOTP (if MFA was set during registration)
+      bidder ->> cube: 14. sessionCreate (Exchange OIDC token for signer session)
+      cube -->> bidder: signer session
+      bidder ->> resella: 15. 出品中NFT一覧取得
+      resella ->> db: 出品中NFT一覧取得
+      db -->> resella: 出品中NFT一覧
+      resella -->> bidder: 出品中NFT一覧
+      bidder ->> blockchain: 16. getTransactionCount
+      blockchain --> bidder: nonce
+      bidder ->> cube: 17. bidメソッドに対してEIP712 sign request (Gas less transaction)
+      cube -->> bidder: signed transaction
+      bidder ->> relayer: 18. sendRawTransaction
+      relayer ->> blockchain: forward
+      blockchain ->> mp: bidメソッド実行
+      mp ->> mp: bidが有効なら一つ前のbidはキャンセルされ一つ前のbidderに返金
+      mp ->> mp: 新しいbidがbidderからマケプレコントラクトに送金される
+      mp ->> webhook: NewBidイベント
+      webhook ->> db: Bidレコード新規追加
+      mp -->> blockchain: ok
+      blockchain -->> relayer: ok
+      relayer -->> bidder: ok
+      
+      seller ->> resella: 19. 出品中NFT一覧取得
+      resella ->> db: 出品中NFT一覧取得
+      db -->> resella: 出品中NFT一覧
+      resella -->> seller: 出品中NFT一覧
+      seller ->> blockchain: 20. getTransactionCount
+      blockchain --> seller: nonce
+      seller ->> cube: 21. closeAuctionメソッドに対してEIP712 sign request (Gas less transaction)
+      cube -->> seller: signed transaction
+      seller ->> relayer: 22. sendRawTransaction
+      relayer ->> blockchain: forward
+      blockchain ->> mp: closeAuctionメソッド実行
+      mp ->> mp: NFTをマケプレコントラクトからwinningBidderに転送
+      mp ->> webhook: AuctionClosedイベント
+      webhook ->> db: Listing/Bidレコード更新
+      mp -->> blockchain: ok
+      blockchain -->> relayer: ok
+      relayer -->> seller: ok
+  </div>
+</body>
+</html>

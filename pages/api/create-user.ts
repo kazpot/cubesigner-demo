@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import * as cs from "@cubist-labs/cubesigner-sdk";
-import { JsonFileSessionStorage } from "@cubist-labs/cubesigner-sdk-fs-storage";
+import axios from "axios";
 
 type ResponseData = {
   userId: string | null;
@@ -9,29 +9,36 @@ type ResponseData = {
   error: string;
 };
 
-const sessionFilePath = process.env.NEXT_PUBLIC_CUBE_SESSION_FILE_PATH || "";
+const managementToken = process.env.NEXT_PUBLIC_MANAGEMENT_TOKEN || "";
+const orgId = process.env.NEXT_PUBLIC_CUBE_ORG_ID || "";
+const encodedOrgId = encodeURIComponent(orgId);
+
+const axiosInstance = axios.create({
+  baseURL: "https://gamma.signer.cubist.dev",
+  // proxy: {
+  //   host: "proxy.example.com",
+  //   port: 8080,
+  // },
+  headers: {
+    accept: "*/*",
+    "Content-Type": "application/json",
+    Authorization: managementToken,
+  },
+});
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseData>
 ) {
   try {
-    const fileStorage = new JsonFileSessionStorage<cs.SignerSessionData>(
-      sessionFilePath
-    );
-
-    const sessionManger = await cs.SignerSessionManager.loadFromStorage(
-      fileStorage
-    );
-
-    const client = new cs.CubeSignerClient(sessionManger);
-
     const proof = req.body.proof;
-    const org = new cs.Org(client);
 
     try {
-      await org.verifyIdentity(proof);
-      console.log("verified");
+      const response = await axiosInstance.post(
+        `/v0/org/${encodedOrgId}/identity/verify`,
+        proof
+      );
+      console.log("identity verification response:", response.data);
     } catch (e: any) {
       res.status(403).json({
         userId: null,
@@ -46,21 +53,35 @@ export default async function handler(
     const email = proof.email;
 
     if (!proof.user_info?.user_id) {
-      const userId = await client.createOidcUser({ iss, sub }, email, {
-        memberRole: "Alien",
+      let response = await axiosInstance.post(`/v0/org/${encodedOrgId}/users`, {
+        identity: { iss, sub },
+        role: "Alien",
+        email,
         mfaPolicy: {
           num_auth_factors: 1,
           allowed_mfa_types: ["Fido"],
         },
       });
+      console.log("create user response:", response.data);
 
+      const userId = response.data.user_id;
       console.log("user created: " + userId);
 
-      const key = await org.createKey(cs.Secp256k1.Evm, userId);
+      response = await axiosInstance.post(`/v0/org/${encodedOrgId}/keys`, {
+        count: 1,
+        key_type: cs.Secp256k1.Evm,
+        owner: userId,
+      });
 
-      res
-        .status(200)
-        .json({ userId, keyId: key.id, address: key.materialId, error: "" });
+      console.log(response.data);
+      const key = response.data.keys[0];
+
+      res.status(200).json({
+        userId,
+        keyId: key.key_id,
+        address: key.material_id,
+        error: "",
+      });
     }
   } catch (e: any) {
     res.status(500).json({

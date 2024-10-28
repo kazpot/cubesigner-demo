@@ -1,35 +1,42 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import * as cs from "@cubist-labs/cubesigner-sdk";
-import { JsonFileSessionStorage } from "@cubist-labs/cubesigner-sdk-fs-storage";
+import axios from "axios";
 
 type ResponseData = {
   status: string | null;
   error: string;
 };
 
-const sessionFilePath = process.env.NEXT_PUBLIC_CUBE_SESSION_FILE_PATH || "";
+const managementToken = process.env.NEXT_PUBLIC_MANAGEMENT_TOKEN || "";
+const orgId = process.env.NEXT_PUBLIC_CUBE_ORG_ID || "";
+const encodedOrgId = encodeURIComponent(orgId);
+
+const axiosInstance = axios.create({
+  baseURL: "https://gamma.signer.cubist.dev",
+  // proxy: {
+  //   host: "proxy.example.com",
+  //   port: 8080,
+  // },
+  headers: {
+    accept: "*/*",
+    "Content-Type": "application/json",
+    Authorization: managementToken,
+  },
+});
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ResponseData>
 ) {
   try {
-    const fileStorage = new JsonFileSessionStorage<cs.SignerSessionData>(
-      sessionFilePath
-    );
-
-    const sessionManger = await cs.SignerSessionManager.loadFromStorage(
-      fileStorage
-    );
-
-    const client = new cs.CubeSignerClient(sessionManger);
-
     const proof = req.body.proof;
-    const org = new cs.Org(client);
+    console.log("proof:", proof);
 
     try {
-      await org.verifyIdentity(proof);
-      console.log("verified");
+      const response = await axiosInstance.post(
+        `/v0/org/${encodedOrgId}/identity/verify`,
+        proof
+      );
+      console.log("identity verification response:", response.data);
     } catch (e: any) {
       res.status(403).json({
         status: null,
@@ -38,19 +45,19 @@ export default async function handler(
     }
 
     if (proof.user_info?.user_id) {
-      const result = await client.deleteOidcUser({
-        iss: proof.identity.iss,
-        sub: proof.identity.sub,
-      });
+      const response = await axiosInstance.delete(
+        `/v0/org/${encodedOrgId}/users/oidc`,
+        { data: { iss: proof.identity.iss, sub: proof.identity.sub } }
+      );
 
-      console.log("delete user: " + result.status);
+      console.log("delete user response:", response.data);
 
-      res.status(200).json({ status: result.status, error: "" });
+      res.status(200).json({ status: response.data.status, error: "" });
     }
   } catch (e: any) {
     res.status(500).json({
       status: null,
-      error: "Failed to sign up: " + e.message,
+      error: "Failed to delete user: " + e.message,
     });
   }
 }
